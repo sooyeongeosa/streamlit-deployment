@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import plotly.express as px
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -76,31 +76,25 @@ def eda():
     with chart_tabs[0]:
         st.subheader("연령, 키, 몸무게, BMI 분포")
         for col in ["Age", "Height", "Weight", "BMI"]:
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(x=df[col], nbinsx=20, name=col, marker_color='#636EFA'))
-            fig.update_layout(title=f"{col} 분포", xaxis_title=col, yaxis_title="빈도", bargap=0.2)
+            fig = px.histogram(df, x=col, nbins=20, title=f"{col} 분포",
+                               labels={col: col}, marginal="box", color_discrete_sequence=["#636EFA"])
             st.plotly_chart(fig, use_container_width=True)
     
     # 박스플롯 (성별 및 비만 등급별 BMI)
     with chart_tabs[1]:
         st.subheader("BMI 박스플롯")
-        fig = go.Figure()
-        for label in df["Label"].unique():
-            df_filtered = df[df["Label"] == label]
-            fig.add_trace(go.Box(y=df_filtered["BMI"], x=df_filtered["Gender"].astype(str),
-                                 name=le_label.classes_[label], boxmean=True))
-        fig.update_layout(title="성별 및 비만 등급별 BMI 분포", xaxis_title="성별", yaxis_title="BMI",
-                          boxmode='group')
+        fig = px.box(df, x="Gender", y="BMI", color="Label", 
+                     title="성별 및 비만 등급별 BMI 분포",
+                     labels={"Gender": "성별", "BMI": "BMI", "Label": "비만 등급"},
+                     color_discrete_sequence=px.colors.qualitative.Set2)
         st.plotly_chart(fig, use_container_width=True)
     
     # 히트맵 (상관관계 분석)
     with chart_tabs[2]:
         st.subheader("변수 간 상관관계")
         corr_matrix = df.corr()
-        fig = go.Figure(data=go.Heatmap(z=corr_matrix.values, x=corr_matrix.columns,
-                                        y=corr_matrix.columns, colorscale="Blues",
-                                        texttemplate="%{z:.2f}"))
-        fig.update_layout(title="변수 간 상관관계 히트맵")
+        fig = px.imshow(corr_matrix, text_auto=True, color_continuous_scale="Blues",
+                        title="변수 간 상관관계 히트맵")
         st.plotly_chart(fig, use_container_width=True)
 
 # 모델 성능 평가
@@ -115,10 +109,9 @@ def model_performance():
     # 특성 중요도 시각화
     feature_importance = pd.DataFrame({"Feature": X.columns, "Importance": model.feature_importances_})
     feature_importance = feature_importance.sort_values(by="Importance", ascending=False)
-    fig = go.Figure()
-    fig.add_trace(go.Bar(x=feature_importance['Feature'], y=feature_importance['Importance'],
-                         marker_color='blue'))
-    fig.update_layout(title='특성 중요도', xaxis_title='특성', yaxis_title='중요도')
+    fig = px.bar(feature_importance, x='Feature', y='Importance', title='특성 중요도',
+                 labels={'Feature': '특성', 'Importance': '중요도'},
+                 color='Importance', color_continuous_scale='Bluered_r')
     st.plotly_chart(fig, use_container_width=True)
 
 # 메뉴 선택에 따른 화면 전환
